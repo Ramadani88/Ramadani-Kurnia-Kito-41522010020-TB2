@@ -1,0 +1,120 @@
+package com.example.tes.methods.student.create_student;
+
+import android.app.Dialog;
+import android.os.Bundle;
+import androidx.fragment.app.DialogFragment;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+import com.example.tes.R;
+import com.example.tes.database.*;
+import com.example.tes.methods.student.StudentCrudListener;
+import com.example.tes.model.Student;
+
+import static com.example.tes.utils.Constants.*;
+
+
+public class StudentCreate extends DialogFragment {
+
+    private static StudentCrudListener studentCrudListener;
+
+    private EditText nameEditText;
+    private EditText registrationEditText;
+    private EditText phoneEditText;
+    private EditText emailEditText;
+    private Button createButton;
+    private Button cancelButton;
+
+    private String nameString = "";
+    private long registrationNumber = -1;
+    private String phoneString = "";
+    private String emailString = "";
+
+    public StudentCreate() {
+        // Required empty public constructor
+    }
+
+    public static StudentCreate newInstance(String title, StudentCrudListener listener){
+        studentCrudListener = listener;
+        StudentCreate studentCreate = new StudentCreate();
+        Bundle args = new Bundle();
+        args.putString("title", title);
+        studentCreate.setArguments(args);
+
+        studentCreate.setStyle(DialogFragment.STYLE_NORMAL, R.style.CustomDialog);
+
+        return studentCreate;
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+
+        View view = inflater.inflate(R.layout.student_create_dialog, container, false);
+
+        nameEditText = view.findViewById(R.id.studentNameEditText);
+        registrationEditText = view.findViewById(R.id.registrationEditText);
+        phoneEditText = view.findViewById(R.id.phoneEditText);
+        emailEditText = view.findViewById(R.id.emailEditText);
+        createButton = view.findViewById(R.id.createButton);
+        cancelButton = view.findViewById(R.id.cancelButton);
+
+        String title = getArguments().getString(TITLE);
+        getDialog().setTitle(title);
+
+        createButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                nameString = nameEditText.getText().toString();
+                registrationNumber = Integer.parseInt(registrationEditText.getText().toString());
+                phoneString = phoneEditText.getText().toString();
+                emailString = emailEditText.getText().toString();
+
+                final Student student = new Student(-1, nameString, registrationNumber, phoneString, emailString);
+
+                QueryContract.StudentQuery studentQuery = new StudentQueryImplementation();
+                studentQuery.createStudent(student, new QueryResponse<Boolean>() {
+                    @Override
+                    public void onSuccess(Boolean data) {
+                        getDialog().dismiss();
+                        studentCrudListener.onStudentListUpdate(data);
+                        Toast.makeText(getContext(), "Student created successfully", Toast.LENGTH_LONG).show();
+                    }
+
+                    @Override
+                    public void onFailure(String message) {
+                        studentCrudListener.onStudentListUpdate(false);
+                        Toast.makeText(getContext(), message, Toast.LENGTH_LONG).show();
+                    }
+                });
+
+            }
+        });
+
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                getDialog().dismiss();
+            }
+        });
+
+        return view;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        Dialog dialog = getDialog();
+        if (dialog != null) {
+            int width = ViewGroup.LayoutParams.MATCH_PARENT;
+            int height = ViewGroup.LayoutParams.WRAP_CONTENT;
+            //noinspection ConstantConditions
+            dialog.getWindow().setLayout(width, height);
+        }
+    }
+
+}
